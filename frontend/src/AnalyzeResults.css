@@ -1,0 +1,185 @@
+/* --- Summary Cards --- */
+.summary-cards {
+  display: flex;
+  gap: 20px;
+  width: 100%;
+  margin-top: 20px;
+}
+
+.summary-card {
+  flex: 1;
+  background: #282c34;
+  border-radius: 8px;
+  padding: 20px;
+  border: 1px solid #444;
+}
+
+.summary-card-title {
+  font-size: 14px;
+  color: #a0a0a0;
+  margin-bottom: 10px;
+}
+
+.summary-card-value {
+  font-size: 28px;
+  font-weight: bold;
+  color: #ffffff;
+}
+
+.summary-card-footer {
+  font-size: 12px;
+  color: #a0a0a0;
+  margin-top: 5px;
+}
+
+/* --- Toolbar --- */
+.results-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 20px;
+  padding: 10px;
+  background: #282c34;
+  border-radius: 8px;
+}
+
+.search-bar {
+  flex: 1;
+  max-width: 400px;
+}
+
+.search-bar input {
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 5px;
+  border: 1px solid #444;
+  background-color: #1e1e2d;
+  color: white;
+  font-size: 14px;
+}
+
+.export-button {
+  background: none;
+  border: 1px solid #444;
+  color: #e0e0e0;
+  padding: 8px 12px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+/* --- Results Table --- */
+.results-table-container {
+  margin-top: 10px;
+}
+
+.results-table-header, .results-table-row {
+  display: grid;
+  grid-template-columns: 2.5fr 1fr 2.5fr 0.5fr;
+  gap: 10px;
+  align-items: center;
+  padding: 15px;
+  border-bottom: 1px solid #3a3f4a;
+}
+
+.results-table-header {
+  font-size: 12px;
+  color: #a0a0a0;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.results-table-row {
+  background: #282c34;
+  border-radius: 5px;
+  margin-bottom: 5px;
+}
+
+.stock-info .stock-ticker {
+  font-size: 16px;
+  font-weight: 500;
+  color: #ffffff;
+}
+.stock-info .stock-name {
+  font-size: 12px;
+  color: #a0a0a0;
+}
+
+.stock-price {
+  font-weight: 500;
+}
+.stock-change-pos {
+  color: #10b981;
+  font-weight: 500;
+}
+.stock-change-neg {
+  color: #ef4444;
+  font-weight: 500;
+}
+
+.overlap-pill {
+  background: #1e1e2d;
+  border: 1px solid #444;
+  padding: 4px 8px;
+  border-radius: 5px;
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.indices-pills span {
+  background: #3a3f4a;
+  color: #e0e0e0;
+  padding: 3px 8px;
+  border-radius: 5px;
+  font-size: 12px;
+  margin-right: 5px;
+}
+
+.expand-button {
+  background: none;
+  border: none;
+  color: #a0a0a0;
+  font-size: 20px;
+  cursor: pointer;
+  transform: rotate(0deg);
+  transition: transform 0.2s ease;
+}
+.expand-button.expanded {
+  transform: rotate(180deg);
+}
+
+.row-expansion {
+  background: #23272f;
+  padding: 15px;
+  border-radius: 0 0 5px 5px;
+  margin: -5px 0 5px 0;
+}
+.row-expansion-title {
+  font-size: 12px;
+  font-weight: bold;
+  color: #a0a0a0;
+  margin-bottom: 10px;
+}
+.row-expansion-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* --- Insights Box --- */
+.insights-box {
+  background: #282c34;
+  border: 1px solid #3b82f6;
+  border-radius: 8px;
+  padding: 20px;
+  margin-top: 20px;
+  font-size: 14px;
+}
+
+.insights-box ul {
+  padding-left: 20px;
+  margin: 10px 0 0 0;
+}
+.insights-box li {
+  margin-bottom: 5px;
+  color: #a0a0a0;
+}

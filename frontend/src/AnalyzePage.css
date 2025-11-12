@@ -1,0 +1,256 @@
+.page-content {
+  width: 100%;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.selected-tray {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  min-height: 50px;
+}
+
+.selected-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  flex: 1;
+}
+
+.pill {
+  background-color: #3b82f6;
+  color: white;
+  padding: 5px 10px;
+  border-radius: 15px;
+  font-size: 14px;
+}
+
+.clear-button {
+  background: none;
+  border: 1px solid #555;
+  color: #e0e0e0;
+  border-radius: 5px;
+  padding: 5px 10px;
+  cursor: pointer;
+}
+.clear-button:hover {
+  background-color: #333;
+}
+
+.category-tabs {
+  display: flex;
+  margin-top: 20px;
+  border-bottom: 1px solid #444;
+}
+
+.category-tabs button {
+  background: none;
+  border: none;
+  color: #a0a0a0;
+  padding: 10px 20px;
+  font-size: 16px;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+}
+
+.category-tabs button.active {
+  color: #ffffff;
+  border-bottom: 3px solid #3b82f6;
+}
+
+.index-selector-list {
+  margin-top: 20px;
+}
+
+.index-item {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 15px;
+  margin-bottom: 10px;
+  background-color: #23272f; /* Slightly lighter than card */
+}
+
+.index-item input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+}
+
+.index-info {
+  display: flex;
+  justify-content: space-between;
+  flex-grow: 1;
+  cursor: pointer;
+}
+
+.index-name {
+  font-size: 16px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pill-52wh {
+  background-color: #10b981; /* Green */
+  color: white;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.index-category {
+  font-size: 14px;
+  color: #a0a0a0;
+}
+
+.analyze-footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background-color: #1e1e2d;
+  padding: 20px;
+  border-top: 1px solid #333;
+  display: flex;
+  justify-content: center;
+  z-index: 100;
+}
+
+.analyze-button {
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  padding: 15px 30px;
+  font-size: 18px;
+  font-weight: bold;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.analyze-button:disabled {
+  background-color: #555;
+  cursor: not-allowed;
+}
+
+.results-container {
+  margin-top: 20px;
+  /* Add padding to the bottom to avoid the footer button */
+  padding-bottom: 100px;
+}
+
+.results-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+
+.results-table th, .results-table td {
+  border: 1px solid #444;
+  padding: 10px;
+  text-align: left;
+}
+
+.results-table th {
+  background: #3a3f4a;
+}
+
+/* Add a bit of extra padding to the page */
+.page-content {
+  padding-bottom: 100px; /* Space for the footer */
+}
+
+/* ... (at the end of AnalyzePage.css) ... */
+
+/* --- Selected Tray Updates --- */
+.selected-tray-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 10px;
+}
+
+.clear-all-btn, .select-all-btn {
+  background-color: #374151; /* Dark gray */
+  border: 1px solid #4b5563;
+  color: #e0e0e0;
+  border-radius: 5px;
+  padding: 5px 10px;
+  cursor: pointer;
+  margin-left: 10px;
+}
+.clear-all-btn:hover, .select-all-btn:hover {
+  background-color: #4b5563;
+}
+
+/* Style the "Clear All" from your figma */
+.clear-all-btn {
+  background-color: #111827; /* Black */
+  border: 1px solid #4b5563;
+}
+.clear-all-btn:hover {
+  background-color: #1f2937;
+}
+
+.pill-removable {
+  display: flex;
+  align-items: center;
+  background-color: #1e1e2d;
+  border: 1px solid #444;
+  padding-left: 10px;
+  padding-right: 2px;
+}
+
+.pill-remove {
+  background: none;
+  border: none;
+  color: #a0a0a0;
+  cursor: pointer;
+  font-size: 18px;
+  padding: 0 5px;
+  line-height: 1;
+}
+.pill-remove:hover {
+  color: #ffffff;
+}
+
+/* --- Category Tabs Container --- */
+.category-tabs-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #444;
+  margin-top: 20px;
+}
+
+.category-tabs {
+  border-bottom: none; /* Remove duplicate border */
+}
+
+.select-all-link {
+  background: none;
+  border: none;
+  color: #a0a0a0;
+  cursor: pointer;
+  font-size: 14px;
+}
+.select-all-link:hover {
+  color: #ffffff;
+}
+
+.selected-pills {
+  display: flex;
+  flex-direction: row; /* This is the default, but good to be explicit */
+  flex-wrap: wrap;     /* This is the magic: tells pills to wrap to the next line */
+  gap: 8px;            /* This adds spacing between the pills */
+  margin-top: 10px;    /* Adds some space below the header */
+}
+
+/* Make sure the tray itself is laid out as a column */
+.selected-tray {
+  display: flex;
+  flex-direction: column;
+}

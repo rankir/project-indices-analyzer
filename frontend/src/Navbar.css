@@ -1,0 +1,62 @@
+.navbar {
+  width: 100%;
+  background-color: #1e1e2d; /* Dark background */
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 60px;
+  border-bottom: 1px solid #333;
+  color: #e0e0e0;
+  box-sizing: border-box;
+}
+
+.navbar-left {
+  display: flex;
+  align-items: center;
+}
+
+.nav-logo {
+  font-size: 24px;
+  font-weight: bold;
+  background-color: #3b82f6; /* Blue background */
+  color: white;
+  padding: 4px 10px;
+  border-radius: 6px;
+  text-decoration: none;
+  margin-right: 10px;
+}
+
+.nav-title {
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.navbar-center {
+  display: flex;
+  gap: 10px;
+}
+
+.nav-item {
+  color: #a0a0a0;
+  text-decoration: none;
+  padding: 10px 15px;
+  border-radius: 6px;
+  font-weight: 500;
+}
+
+.nav-item:hover {
+  background-color: #2a2a3a;
+  color: #ffffff;
+}
+
+/* This style is applied by NavLink for the active page */
+.nav-item.active {
+  background-color: #282c34;
+  color: #ffffff;
+}
+
+.navbar-right {
+  font-size: 14px;
+  color: #a0a0a0;
+}

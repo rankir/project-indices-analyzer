@@ -1,0 +1,229 @@
+/* ... (at the end of SetupPage.css) ... */
+/* Creates the side-by-side layout */
+.upload-container {
+  display: flex;
+  gap: 20px;
+  width: 100%;
+}
+
+/* Makes each upload box take half the space */
+.upload-box {
+  flex: 1; 
+  display: flex;
+  flex-direction: column;
+}
+
+/* Styles the <label> to look like a proper button */
+.btn-primary {
+  padding: 10px 15px;
+  border: none;
+  border-radius: 5px;
+  color: white;
+  background-color: #3b82f6; /* Blue */
+  cursor: pointer;
+  font-size: 16px;
+  text-align: center;
+  margin-top: 10px;
+}
+
+.btn-primary:hover {
+  background-color: #2563eb;
+}
+/* --- Button Styles --- */
+.btn-primary, .btn-secondary {
+  padding: 10px 15px;
+  border: none;
+  border-radius: 5px;
+  color: white;
+  cursor: pointer;
+  font-size: 16px;
+  text-align: center;
+}
+
+.btn-primary {
+  background-color: #3b82f6;
+}
+.btn-primary:disabled {
+  background-color: #555;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background-color: #6b7280; /* Gray */
+}
+
+/* --- Modal Styles --- */
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: #282c34;
+  padding: 25px;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 500px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.modal-file-info {
+  background-color: #1e1e2d;
+  padding: 10px;
+  border-radius: 5px;
+  font-size: 14px;
+}
+
+.modal-content label {
+  font-size: 14px;
+  color: #a0a0a0;
+}
+
+.modal-content select {
+  width: 100%;
+  padding: 10px;
+  border-radius: 5px;
+  border: 1px solid #444;
+  background-color: #1e1e2d;
+  color: white;
+  font-size: 16px;
+}
+
+.modal-message {
+  font-size: 14px;
+  color: #facc15; /* Yellow for messages */
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+/* --- Red Delete Button --- */
+.btn-danger {
+  padding: 10px 15px;
+  border: none;
+  border-radius: 5px;
+  color: white;
+  cursor: pointer;
+  font-size: 16px;
+  background-color: #ef4444; /* Red */
+}
+.btn-danger:hover {
+  background-color: #dc2626;
+}
+
+/* --- Uploaded Files List Styles --- */
+.uploaded-files-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #444;
+  padding-bottom: 10px;
+}
+
+.file-list {
+  margin-top: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.file-list-item {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  background-color: #23272f;
+  padding: 15px;
+  border-radius: 8px;
+}
+
+.file-icon span {
+  font-size: 24px;
+  background-color: #3b82f6;
+  padding: 8px 12px;
+  border-radius: 6px;
+}
+
+.file-details {
+  flex-grow: 1;
+}
+
+.file-name {
+  font-size: 16px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 5px;
+}
+
+.category-pill {
+  background-color: #1e1e2d;
+  color: #a0a0a0;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.file-meta {
+  font-size: 13px;
+  color: #a0a0a0;
+  display: flex;
+  gap: 8px;
+}
+
+.file-actions .delete-btn {
+  background: none;
+  border: none;
+  color: #a0a0a0;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 5px;
+}
+
+.file-actions .delete-btn:hover {
+  color: #ef4444;
+}
+
+/* ... (at the end of SetupPage.css) ... */
+
+/* --- Styles for new multi-file list in modal --- */
+.modal-file-list {
+  background-color: #1e1e2d;
+  padding: 10px 15px;
+  border-radius: 5px;
+  font-size: 14px;
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+.modal-file-list span {
+  font-weight: bold;
+  color: #a0a0a0;
+}
+
+.modal-file-list ul {
+  list-style: none;
+  padding-left: 0;
+  margin-top: 8px;
+  margin-bottom: 0;
+}
+
+.modal-file-list li {
+  padding: 4px 0;
+  color: #e0e0e0;
+}
