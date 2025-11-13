@@ -1,398 +1,301 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import { useAlerts } from './AlertsContext';
-import './AnalyzePage.css';
-import './AnalyzeResults.css'; // Make sure this CSS file is imported
+import './AnalyzePage.css'; // We will overhaul this CSS next
 
 const API_URL = "http://127.0.0.1:8000";
+const CATEGORIES = ["Broader Indices", "Sectorial Indices", "Thematic Indices", "Strategic Indices"];
 
-// --- Helper Component for the expandable row ---
-// This sub-component renders a single row in the results table
+// --- Helper: Results Row Component ---
 function AnalysisResultRow({ row, totalIndices }) {
   const [isExpanded, setIsExpanded] = useState(false);
-  
-  // Logic to show 3 pills, then a "+# more"
   const indicesToShow = row.indices.slice(0, 3);
   const moreCount = row.indices.length - 3;
 
   return (
     <>
-      <div className="results-table-row">
+      <div className="results-table-row" onClick={() => setIsExpanded(!isExpanded)}>
         <div className="stock-info">
           <div className="stock-ticker">{row.stock}</div>
-          {/* We add a placeholder name, but you could fetch this in the future */}
-          <div className="stock-name">{row.stock} Ltd. (Placeholder)</div>
         </div>
-        
         <div className="overlap-pill">
           {row.appears_in}/{totalIndices}
         </div>
-        
         <div className="indices-pills">
-          {indicesToShow.map(name => (
-            <span key={name}>{name}</span>
-          ))}
-          {moreCount > 0 && <span>+{moreCount} more</span>}
+          {indicesToShow.map(name => <span key={name}>{name}</span>)}
+          {moreCount > 0 && <span className="more-pill">+{moreCount}</span>}
         </div>
-        
-        <button 
-          className={`expand-button ${isExpanded ? 'expanded' : ''}`}
-          onClick={() => setIsExpanded(!isExpanded)}
-        >
-          ▼
-        </button>
+        <button className={`expand-button ${isExpanded ? 'expanded' : ''}`}>▼</button>
       </div>
-      
-      {/* This is the content that shows when you expand the row */}
       {isExpanded && (
         <div className="row-expansion">
-          <div className="row-expansion-title">
-            Appears in all {row.appears_in} indices:
-          </div>
+          <div className="row-expansion-title">Found in:</div>
           <div className="row-expansion-list">
-            {row.indices.map(name => (
-              <span key={name} className="pill">{name}</span>
-            ))}
+            {row.indices.map(name => <span key={name} className="pill-small">{name}</span>)}
           </div>
         </div>
       )}
     </>
   );
 }
-// --- End of AnalysisResultRow Component ---
 
-
-// --- Main AnalyzePage Component ---
+// --- MAIN COMPONENT ---
 function AnalyzePage() {
-  const { alertData, getAlertIndexIds } = useAlerts();
+  const { alertData } = useAlerts();
   
+  // Data State
   const [indices, setIndices] = useState([]);
   const [selectedIndices, setSelectedIndices] = useState([]);
-  
-  // --- This is the fix for your category bug ---
-  // Default to the full name, matching the database
-  const [category, setCategory] = useState('Broader Indices'); 
-
   const [analysisResult, setAnalysisResult] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
+  
+  // UI State
+  const [stockSearch, setStockSearch] = useState('');
+  const [stockSearchResults, setStockSearchResults] = useState([]); // Indices containing searched stock
+  const [resultsSearch, setResultsSearch] = useState(''); // Filtering the results table
+  const [expandedCategories, setExpandedCategories] = useState(CATEGORIES); // All open by default
 
-  // Fetch all indices on component load
+  // 1. Fetch Indices
   useEffect(() => {
-    const fetchIndices = async () => {
-      try {
-        const response = await axios.get(`${API_URL}/api/indices`);
-        setIndices(response.data);
-      } catch (error) {
-        // This is the error you were seeing earlier!
-        console.error("Error fetching indices:", error);
-      }
-    };
-    fetchIndices();
-  }, []); // The empty array [] means this runs only once on page load
+    axios.get(`${API_URL}/api/indices`).then(res => setIndices(res.data));
+  }, []);
 
-  // Handle checking/unchecking a box
-  const handleSelect = (index) => {
-    setSelectedIndices((prevSelected) => {
-      const isSelected = prevSelected.find(item => item.id === index.id);
-      if (isSelected) {
-        // If already selected, remove it
-        return prevSelected.filter(item => item.id !== index.id);
+  // 2. Handle Stock Search (Find Index by Stock)
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(async () => {
+      if (stockSearch.length > 1) {
+        try {
+          const res = await axios.get(`${API_URL}/api/search/stock-indices?q=${stockSearch}`);
+          setStockSearchResults(res.data.map(i => i.id));
+        } catch (e) { console.error(e); }
       } else {
-        // If not selected, add it
-        return [...prevSelected, index];
+        setStockSearchResults([]);
       }
+    }, 500);
+    return () => clearTimeout(delayDebounceFn);
+  }, [stockSearch]);
+
+  // 3. Selection Logic
+  const toggleIndex = (index) => {
+    setSelectedIndices(prev => {
+      const exists = prev.find(i => i.id === index.id);
+      if (exists) return prev.filter(i => i.id !== index.id);
+      return [...prev, index];
     });
-    // Clear old results when selection changes
-    setAnalysisResult(null); 
   };
 
-  // Handle removing a single pill from the top tray
-  const handleRemovePill = (indexToRemove) => {
-    setSelectedIndices((prevSelected) => 
-      prevSelected.filter(item => item.id !== indexToRemove.id)
+  const toggleCategory = (cat) => {
+    const categoryIndices = indices.filter(i => (i.category || 'Uncategorized') === cat);
+    const allSelected = categoryIndices.every(i => selectedIndices.find(s => s.id === i.id));
+    
+    if (allSelected) {
+      // Deselect all in category
+      setSelectedIndices(prev => prev.filter(s => s.category !== cat));
+    } else {
+      // Select all in category (merge unique)
+      const newSelection = [...selectedIndices];
+      categoryIndices.forEach(i => {
+        if (!newSelection.find(s => s.id === i.id)) newSelection.push(i);
+      });
+      setSelectedIndices(newSelection);
+    }
+  };
+
+  const toggleAccordion = (cat) => {
+    setExpandedCategories(prev => 
+      prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat]
     );
   };
-  
-  // Filter indices based on the active category tab
-  const normalize = (str) => (str || '').trim().toLowerCase();
-  
-  const visibleIndices = indices.filter(index => {
-    const indexCat = normalize(index.category || 'N/A');
-    const targetCat = normalize(category);
-    
-    // Check for exact match OR partial match (e.g. "Broader" matches "Broader Indices")
-    return indexCat === targetCat || indexCat.includes(targetCat);
-  });
 
-  // Handle "Select All" for the visible category
-  const handleSelectAllVisible = () => {
-    const selectedSet = new Set(selectedIndices.map(i => i.id));
-    const newSelections = [];
-    
-    // Add any indices that aren't already selected
-    for (const index of visibleIndices) {
-      if (!selectedSet.has(index.id)) {
-        newSelections.push(index);
-      }
+  // 4. Analysis Logic (Auto-run when selection changes, with debounce)
+  useEffect(() => {
+    if (selectedIndices.length === 0) {
+      setAnalysisResult(null);
+      return;
     }
-    
-    setSelectedIndices([...selectedIndices, ...newSelections]);
-  };
+    const timer = setTimeout(async () => {
+      setIsLoading(true);
+      try {
+        const ids = selectedIndices.map(i => i.id);
+        const res = await axios.post(`${API_URL}/api/analysis/common-stocks`, { index_ids: ids });
+        setAnalysisResult(res.data);
+      } catch (e) { console.error(e); }
+      setIsLoading(false);
+    }, 800); // 800ms debounce to prevent spamming API while selecting
+    return () => clearTimeout(timer);
+  }, [selectedIndices]);
 
-  // Handle the "Analyze" button click
-  const handleAnalyze = async () => {
-    setIsLoading(true);
-    setAnalysisResult(null); 
-    const index_ids = selectedIndices.map(index => index.id);
-    
-    // --- THIS IS WHERE THE CONSOLE LOG IS ---
-    console.log("Starting analysis for IDs:", index_ids);
 
-    try {
-      const response = await axios.post(
-        `${API_URL}/api/analysis/common-stocks`,
-        { index_ids }
-      );
-      // --- THIS IS THE DATA FROM YOUR API ---
-      console.log("Data for render:", response.data);
-      setAnalysisResult(response.data); // Store the results
-    } catch (error) {
-      console.error("Error running analysis:", error);
-    }
-    setIsLoading(false); // Hide loading spinner
-  };
+  // 5. Helpers
+  const getCategoryCount = (cat) => selectedIndices.filter(i => i.category === cat).length;
   
-  // Filtered results based on search term
-  const filteredCommonality = analysisResult
-    ? analysisResult.commonality.filter(item =>
-        item.stock.toLowerCase().includes(searchTerm.toLowerCase())
-      )
-    : [];
-  
-  // Get total count for the table header
-  const totalIndicesSelected = analysisResult ? analysisResult.analysis_of.length : 0;
+  const filteredCommonality = useMemo(() => {
+    if (!analysisResult) return [];
+    return analysisResult.commonality.filter(item => 
+      item.stock.toLowerCase().includes(resultsSearch.toLowerCase())
+    );
+  }, [analysisResult, resultsSearch]);
 
-  // --- NEW: Auto Select Handlers ---
-  const handleSelectFromAlerts = (type) => {
-    const targetIds = getAlertIndexIds(type); // Get IDs from context
-    const targetIndices = indices.filter(idx => targetIds.includes(idx.id));
-    
-    // Merge with existing selection, avoiding duplicates
-    const combined = [...selectedIndices];
-    targetIndices.forEach(idx => {
-        if(!combined.find(existing => existing.id === idx.id)) {
-            combined.push(idx);
-        }
-    });
-    setSelectedIndices(combined);
-  };
 
-  // --- RENDER FUNCTION ---
   return (
-    <div className="page-content">
-
-      {/* --- NEW: QUICK ACTIONS BANNER --- */}
-      {alertData && !analysisResult && (
-        <div className="quick-actions-banner">
-           <div className="banner-content">
-             <span className="lightning-icon">⚡</span>
-             <div>
-                <strong>Quick Actions from TradingView Alerts</strong>
-                <div className="banner-sub">{alertData.records.filter(r=>r.mapped_index_id).length} indices detected from your uploaded alerts</div>
-             </div>
-           </div>
-           <div className="banner-actions">
-             <button className="btn-white" onClick={() => handleSelectFromAlerts('ALL')}>
-                Select All from Alerts
-             </button>
-             <button className="btn-white" onClick={() => handleSelectFromAlerts('HIGH')}>
-                ↗ 52W Highs Only
-             </button>
-           </div>
-        </div>
-      )}
-
-      {/* --- Titles --- */}
-      {/* Show "Index Selector" title *before* analysis */}
-      {!analysisResult && (
-        <>
-          <h2>Index Selector</h2>
-          <p>Select indices to analyze their performance and constituent stocks</p>
-        </>
-      )}
-      {/* Show "Analysis" title *after* analysis */}
-      {analysisResult && (
-        <>
-          <h2>Index Overlap Analysis</h2>
-          <p>Analyzing constituent stocks across {selectedIndices.length} selected indices</p>
-        </>
-      )}
+    <div className="analyze-layout">
       
-      {/* --- Selected Indices Tray --- */}
-      <div className="selected-tray card" style={{ background: '#23272f', border: '1px solid #444' }}>
-        <div className="selected-tray-header">
-          <strong>Selected Indices ({selectedIndices.length})</strong>
-          <div>
-            {/* Show "Select All" button only before analysis */}
-            {!analysisResult && !isLoading &&
-              <button onClick={handleSelectAllVisible} className="select-all-btn">
-                Select All ({category})
-              </button>
-            }
-            <button 
-              onClick={() => { setSelectedIndices([]); setAnalysisResult(null); }} 
-              className="clear-all-btn"
-            >
-              Clear All
-            </button>
-          </div>
+      {/* === LEFT SIDEBAR: CONFIGURATION === */}
+      <aside className="sidebar">
+        <div className="sidebar-header">
+          <h3>Index Configuration</h3>
+          <button className="btn-text" onClick={() => setSelectedIndices([])}>Reset All</button>
         </div>
-        <div className="selected-pills">
-          {selectedIndices.length === 0 ? (
-            <span style={{color: '#a0a0a0'}}>None</span>
-          ) : (
-            selectedIndices.map(index => (
-              <span key={index.id} className="pill pill-removable">
-                {index.display_name}
-                <button 
-                  className="pill-remove" 
-                  onClick={() => handleRemovePill(index)}
-                >
-                  &times;
-                </button>
-              </span>
-            ))
-          )}
+
+        {/* Stock Finder Input */}
+        <div className="stock-finder">
+          <label>Find indices containing stock:</label>
+          <input 
+            type="text" 
+            placeholder="e.g. RELIANCE..." 
+            value={stockSearch}
+            onChange={(e) => setStockSearch(e.target.value)}
+          />
+          {stockSearch && <small>{stockSearchResults.length} indices found</small>}
         </div>
-      </div>
 
-      {/* --- This section HIDES when results are shown --- */}
-      {!analysisResult && !isLoading && (
-        <>
-          {/* --- Category Tabs (using the full names) --- */}
-          <div className="category-tabs-container">
-            <div className="category-tabs">
-              <button className={category === 'Broader Indices' ? 'active' : ''} onClick={() => setCategory('Broader Indices')}>Broader</button>
-              <button className={category === 'Sectoral Indices' ? 'active' : ''} onClick={() => setCategory('Sectoral Indices')}>Sectoral</button>
-              <button className={category === 'Thematic Indices' ? 'active' : ''} onClick={() => setCategory('Thematic Indices')}>Thematic</button>
-              <button className={category === 'Strategic Indices' ? 'active' : ''} onClick={() => setCategory('Strategic Indices')}>Strategic</button>
-            </div>
-            <button onClick={handleSelectAllVisible} className="select-all-link">
-              Select All
-            </button>
-          </div>
+        {/* Categories Accordion */}
+        <div className="categories-list">
+          {CATEGORIES.map(cat => {
+            const catIndices = indices.filter(i => (i.category || 'Uncategorized') === cat);
+            const isOpen = expandedCategories.includes(cat);
 
-          {/* --- Index List --- */}
-          <div className="index-selector-list">
-            {indices.filter(i => (i.category || 'N/A') === category).map(index => {
-                const isSelected = selectedIndices.find(item => item.id === index.id);
-                
-                // --- NEW: Check if this index is in the alerts ---
-                const isFromAlert = alertData?.records.some(r => r.mapped_index_id === index.id);
-                
-                return (
-                  <div 
-                    key={index.id} 
-                    className={`index-item card ${isFromAlert ? 'alert-highlight' : ''}`} // Add CSS class
-                  >
-                    <input type="checkbox" checked={!!isSelected} onChange={() => handleSelect(index)} id={`index-${index.id}`} />
-                    <label htmlFor={`index-${index.id}`} className="index-info">
-                      <span className="index-name">
-                        {index.display_name}
-                        {/* Add 'From Alerts' Badge */}
-                        {isFromAlert && <span className="pill-alert">⚡ From Alerts</span>}
-                        {index.is_at_52wh && <span className="pill-52wh">52W High</span>}
-                      </span>
-                    </label>
+            // Always render the accordion header so categories are visible even when empty
+            return (
+              <div key={cat} className={`category-accordion ${isOpen ? 'open' : ''} ${catIndices.length === 0 ? 'empty' : ''}`}>
+                <div className="accordion-header" onClick={() => toggleAccordion(cat)}>
+                  <span>{cat}</span>
+                  <span className="arrow">{isOpen ? '▼' : '▶'}</span>
+                </div>
+
+                {isOpen && (
+                  <div className="accordion-content">
+                    <div className="accordion-actions">
+                        <button onClick={() => toggleCategory(cat)} disabled={catIndices.length === 0}>
+                          {catIndices.length === 0 ? 'No indices' : 'Select/Deselect All'}
+                        </button>
+                        <span>{getCategoryCount(cat)} selected</span>
+                    </div>
+
+                    {catIndices.length === 0 ? (
+                      <div className="category-empty">No indices uploaded for this category.</div>
+                    ) : (
+                      catIndices.map(idx => {
+                        const isSelected = !!selectedIndices.find(s => s.id === idx.id);
+                        // Highlight if it matches Stock Search OR Alert
+                        const isMatch = stockSearchResults.includes(idx.id);
+                        const isAlert = alertData?.records.some(r => r.mapped_index_id === idx.id);
+
+                        return (
+                          <div 
+                            key={idx.id} 
+                            className={`sidebar-item ${isSelected ? 'selected' : ''} ${isMatch ? 'highlight-match' : ''}`}
+                            onClick={() => toggleIndex(idx)}
+                          >
+                            <div className="checkbox">{isSelected && '✓'}</div>
+                            <div className="item-name">
+                              {idx.display_name}
+                              {isAlert && <span className="dot-alert" title="From Alerts">•</span>}
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
                   </div>
-                );
-            })}
-          </div>
-        </>
-      )}
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </aside>
 
-      {/* --- This is the LOADING state --- */}
-      {isLoading && <div className="card"><h3>Analyzing...</h3></div>}
 
-      {/* --- This section shows ONLY when results are ready --- */}
-      {analysisResult && (
-        <div className="results-container">
+      {/* === RIGHT MAIN: ANALYSIS DASHBOARD === */}
+      <main className="analysis-main">
         
-          {/* Summary Cards */}
-          <div className="summary-cards">
-            <div className="summary-card">
-              <div className="summary-card-title">Total Unique Stocks</div>
-              <div className="summary-card-value">{analysisResult.summary.total_unique_stocks}</div>
+        {/* Top Panel: Selected Indices Summary */}
+        <div className="selected-panel-dark">
+            <div className="panel-header">
+                <h2>Selected Indices ({selectedIndices.length})</h2>
+                <span className="sub-text">Real-time overlap analysis</span>
             </div>
-            <div className="summary-card">
-              <div className="summary-card-title">Avg. Overlap</div>
-              <div className="summary-card-value">{analysisResult.summary.avg_overlap}</div>
-              <div className="summary-card-footer">per stock</div>
+            <div className="selected-tags-container">
+                {selectedIndices.length === 0 ? (
+                    <p className="empty-text">Select indices from the sidebar to begin analysis.</p>
+                ) : (
+                    selectedIndices.map(idx => (
+                        <span key={idx.id} className="selected-tag">
+                            {idx.display_name}
+                            <button onClick={(e) => {e.stopPropagation(); toggleIndex(idx);}}>×</button>
+                        </span>
+                    ))
+                )}
             </div>
-            <div className="summary-card">
-              <div className="summary-card-title">High Overlap Stocks</div>
-              <div className_ ="summary-card-value">{analysisResult.summary.high_overlap_stocks}</div>
-              <div className="summary-card-footer">in 70%+ indices</div>
-            </div>
-          </div>
-          
-          {/* Toolbar */}
-          <div className="results-toolbar">
-            <div className="search-bar">
-              <input 
-                type="text" 
-                placeholder="Search stocks by symbol or name..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            <button className="export-button">Export Results</button>
-          </div>
-          
-          {/* Results Table */}
-          <div className="results-table-container">
-            <div className="results-table-header">
-              <div>Stock</div>
-              <div>Appears In</div>
-              <div>Indices</div>
-              <div></div> {/* Column for expand button */}
-            </div>
-            {filteredCommonality.map(row => (
-              <AnalysisResultRow 
-                key={row.stock} 
-                row={row}
-                totalIndices={totalIndicesSelected}
-              />
-            ))}
-          </div>
-          
-          {/* Insights Box */}
-          <div className="insights-box">
-            <strong>Analysis Insights:</strong>
-            <ul>
-              <li>Stocks appearing in more indices may represent core holdings across different strategies.</li>
-              <li>Click on any row to expand and see the complete list of indices containing that stock.</li>
-              <li>Use the search bar to quickly find specific stocks by symbol or company name.</li>
-            </ul>
-          </div>
-          
         </div>
-      )}
 
-      {/* --- This is the "Analyze" button footer --- */}
-      {/* It hides when results are shown */}
-      {!analysisResult && (
-        <div className="analyze-footer">
-          <button 
-            className="analyze-button" 
-            disabled={selectedIndices.length === 0 || isLoading}
-            onClick={handleAnalyze}
-          >
-            {isLoading ? 'Analyzing...' : `Analyze Selected Indices (${selectedIndices.length})`}
-          </button>
-        </div>
-      )}
+        {/* Stats & Results */}
+        {analysisResult ? (
+            <div className="analysis-content">
+                {/* Stats Cards */}
+                <div className="stats-row">
+                    <div className="stat-box">
+                        <label>Total Stocks</label>
+                        <div className="val">{analysisResult.summary.total_unique_stocks}</div>
+                    </div>
+                    <div className="stat-box">
+                        <label>Avg. Overlap</label>
+                        <div className="val">{analysisResult.summary.avg_overlap}</div>
+                        <small>indices per stock</small>
+                    </div>
+                    <div className="stat-box highlight">
+                        <label>High Overlap</label>
+                        <div className="val">{analysisResult.summary.high_overlap_stocks}</div>
+                        <small>stocks in &gt;70% indices</small>
+                    </div>
+                </div>
+
+                {/* Results Toolbar */}
+                <div className="results-header">
+                    <h3>Common Stocks Analysis</h3>
+                    <input 
+                        type="text" 
+                        placeholder="Filter results..." 
+                        value={resultsSearch}
+                        onChange={(e) => setResultsSearch(e.target.value)}
+                    />
+                </div>
+
+                {/* Table */}
+                <div className="table-wrapper">
+                    <div className="table-head">
+                        <div>Stock Ticker</div>
+                        <div>Overlap Count</div>
+                        <div>Indices</div>
+                        <div></div>
+                    </div>
+                    <div className="table-body">
+                        {filteredCommonality.map(row => (
+                            <AnalysisResultRow 
+                                key={row.stock} 
+                                row={row} 
+                                totalIndices={selectedIndices.length} 
+                            />
+                        ))}
+                        {filteredCommonality.length === 0 && <div className="no-results">No stocks found matching filter.</div>}
+                    </div>
+                </div>
+            </div>
+        ) : (
+            <div className="placeholder-state">
+                {isLoading ? <div className="loader">Analyzing data...</div> : "Add indices to see overlap analysis"}
+            </div>
+        )}
+      </main>
     </div>
   );
 }

@@ -6,8 +6,9 @@ from typing import List, Optional
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, Depends, UploadFile, File, HTTPException, Form
 from sqlalchemy.orm import Session
+from sqlalchemy import or_
 import datetime
-from database import create_tables, get_db, TradingViewMap, Index
+from database import create_tables, get_db, TradingViewMap, Index, Stock, IndexConstituent
 from services import (
     process_index_csv, 
     analyze_common_stocks, 
@@ -347,3 +348,29 @@ async def upload_index_file(
         "processed": results, 
         "errors": errors
     }
+
+# --- NEW: Stock Search Endpoint ---
+@app.get("/api/search/stock-indices")
+def search_stock_in_indices(q: str, db: Session = Depends(get_db)):
+    """
+    Finds which indices contain a specific stock ticker.
+    """
+    if not q:
+        return []
+    
+    search_term = q.upper().strip()
+    
+    # Find stocks matching the query
+    stocks = db.query(Stock).filter(Stock.ticker.contains(search_term)).all()
+    stock_ids = [s.id for s in stocks]
+    
+    if not stock_ids:
+        return []
+
+    # Find indices containing these stocks
+    # We join IndexConstituent -> Index to get index details
+    results = db.query(Index).join(IndexConstituent).filter(
+        IndexConstituent.stock_id.in_(stock_ids)
+    ).distinct().all()
+    
+    return results

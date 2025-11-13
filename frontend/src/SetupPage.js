@@ -5,7 +5,7 @@ import { useAlerts } from './AlertsContext';
 import './SetupPage.css';
 
 const API_URL = "http://127.0.0.1:8000";
-const CATEGORIES = ["Broader Indices", "Sectoral Indices", "Thematic Indices", "Strategic Indices"];
+const CATEGORIES = ["Broader Indices", "Sectorial Indices", "Thematic Indices", "Strategic Indices"];
 
 function SetupPage() {
   const navigate = useNavigate();

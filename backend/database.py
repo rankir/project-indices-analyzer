@@ -38,7 +38,7 @@ class Index(Base):
     # This is the "Internal ID" or unique name (e.g. NIFTY_BANK)
     name = Column(String, unique=True, index=True) 
     
-    # 1. Category (e.g., "Sectoral Indices")
+    # 1. Category (e.g., "Sectorial Indices")
     category = Column(String, nullable=True)
     
     # 2. Display Name (e.g., "Nifty Financial Services")
