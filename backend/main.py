@@ -8,7 +8,11 @@ from fastapi import FastAPI, Depends, UploadFile, File, HTTPException, Form
 from sqlalchemy.orm import Session
 import datetime
 from database import create_tables, get_db, TradingViewMap, Index
-from services import process_index_csv, analyze_common_stocks
+from services import (
+    process_index_csv, 
+    analyze_common_stocks, 
+    process_master_config_csv
+)
 
 
 # --- App Initialization ---
@@ -105,46 +109,62 @@ def get_all_indices(db: Session = Depends(get_db)):
 @app.post("/api/setup/upload-index")
 async def upload_index_file(
     db: Session = Depends(get_db), 
-    files: List[UploadFile] = File(...), # <-- Change to List[UploadFile]
-    category: str = Form(...)
+    files: List[UploadFile] = File(...),
+    index_id: Optional[int] = Form(None) # <-- Key Change: Added index_id, Removed category
 ):
     results = []
     errors = []
     
     for file in files:
-        if not file.filename.endswith('.csv'):
-            errors.append(f"{file.filename}: Invalid file type. Please upload a .csv")
-            continue
-        
         contents = await file.read()
         file_size_kb = len(contents) / 1024.0
+        
+        # Logic: 
+        # 1. If index_id is provided (Manual Link), force update that index.
+        # 2. If no index_id, try to find index by 'expected_filename' (Auto Match).
+        
+        target_index = None
+        
+        if index_id:
+            target_index = db.query(Index).filter(Index.id == index_id).first()
+        else:
+            # Auto-match attempt using Master Config
+            target_index = db.query(Index).filter(Index.expected_filename == file.filename).first()
+            
+        if not target_index:
+             # If we can't match it, we fail. The UI will see this error and ask user to map it.
+             errors.append(f"{file.filename}: Unknown file. Please link to an Index.")
+             continue
 
         try:
-            # Process each file individually
+            # Use the existing category from the database target_index
             result = process_index_csv(
                 db=db, 
                 file_name=file.filename, 
                 file_contents=contents, 
-                category=category,
-                file_size_kb=round(file_size_kb, 2)
+                category=target_index.category, # <-- Use DB category, not Form category
+                file_size_kb=round(file_size_kb, 2),
+                index_id=target_index.id # Pass the ID explicitly
             )
-            results.append({
-                "filename": file.filename,
-                "stocks_added": result["stocks_added"]
-            })
+            results.append({"filename": file.filename, "stocks_added": result["stocks_added"]})
         except Exception as e:
-            # Collect errors instead of stopping
-            errors.append(f"{file.filename}: Error processing file: {str(e)}")
-    
-    # Check if any files failed
+            errors.append(f"{file.filename}: {str(e)}")
+
+    # If EVERYTHING failed, raise an error so frontend knows something is wrong
     if not results and errors:
-        raise HTTPException(status_code=500, detail={"errors": errors, "processed": []})
+        # Return 200 with errors so frontend can parse the "Unknown file" message
+        # We don't use 500 because "Unknown file" is a handled logic flow
+        return {
+            "status": "partial_error",
+            "detail": "Some files could not be processed.",
+            "processed": [],
+            "errors": errors
+        }
     
-    # Return a summary of what happened
     return {
-        "status": "success",
-        "detail": f"Processed {len(results)} of {len(files)} files.",
-        "processed": results,
+        "status": "success", 
+        "detail": f"Processed {len(results)} files.", 
+        "processed": results, 
         "errors": errors
     }
 
@@ -257,3 +277,73 @@ async def process_tv_alerts(file: UploadFile = File(...), db: Session = Depends(
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+
+    # --- NEW ENDPOINT: Master Config Upload ---
+@app.post("/api/setup/master-config")
+async def upload_master_config(
+    db: Session = Depends(get_db),
+    file: UploadFile = File(...)
+):
+    contents = await file.read()
+    try:
+        count = process_master_config_csv(db, contents)
+        return {"status": "success", "count": count}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# --- MODIFIED ENDPOINT: Constituent Upload ---
+# Now accepts an optional 'index_id' to force mapping
+@app.post("/api/setup/upload-index")
+async def upload_index_file(
+    db: Session = Depends(get_db), 
+    files: List[UploadFile] = File(...),
+    index_id: Optional[int] = Form(None) # <-- CHANGED: Receives ID, not Category
+):
+    results = []
+    errors = []
+    
+    for file in files:
+        contents = await file.read()
+        file_size_kb = len(contents) / 1024.0
+        
+        # Logic: 
+        # 1. If index_id is provided, force update that index.
+        # 2. If no index_id, try to find index by 'expected_filename'.
+        
+        target_index = None
+        
+        if index_id:
+            target_index = db.query(Index).filter(Index.id == index_id).first()
+        else:
+            # Auto-match attempt
+            target_index = db.query(Index).filter(Index.expected_filename == file.filename).first()
+            
+        if not target_index:
+             # If we can't match it, we fail. The UI must ask the user to map it.
+             errors.append(f"{file.filename}: Unknown file. Please link to an Index.")
+             continue
+
+        try:
+            # We use the existing process logic, but pass the known Category from the DB
+            result = process_index_csv(
+                db=db, 
+                file_name=file.filename, # Update filename
+                file_contents=contents, 
+                category=target_index.category, # Use existing category
+                file_size_kb=round(file_size_kb, 2)
+            )
+            # Ensure the name/ID matches what we found
+            # (process_index_csv might create new if names mismatch, so we should ideally refactor it,
+            # but for now, let's assume filenames align or we force it in next step)
+            
+            results.append({"filename": file.filename, "stocks_added": result["stocks_added"]})
+        except Exception as e:
+            errors.append(f"{file.filename}: {str(e)}")
+
+    return {
+        "status": "success", 
+        "detail": f"Processed {len(results)} files.", 
+        "processed": results, 
+        "errors": errors
+    }

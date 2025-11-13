@@ -71,7 +71,7 @@ function AnalyzePage() {
   
   // --- This is the fix for your category bug ---
   // Default to the full name, matching the database
-  const [category, setCategory] = useState('Broad-based Indices'); 
+  const [category, setCategory] = useState('Broader Indices'); 
 
   const [analysisResult, setAnalysisResult] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -115,7 +115,15 @@ function AnalyzePage() {
   };
   
   // Filter indices based on the active category tab
-  const visibleIndices = indices.filter(index => (index.category || 'N/A') === category);
+  const normalize = (str) => (str || '').trim().toLowerCase();
+  
+  const visibleIndices = indices.filter(index => {
+    const indexCat = normalize(index.category || 'N/A');
+    const targetCat = normalize(category);
+    
+    // Check for exact match OR partial match (e.g. "Broader" matches "Broader Indices")
+    return indexCat === targetCat || indexCat.includes(targetCat);
+  });
 
   // Handle "Select All" for the visible category
   const handleSelectAllVisible = () => {
@@ -265,7 +273,7 @@ function AnalyzePage() {
           {/* --- Category Tabs (using the full names) --- */}
           <div className="category-tabs-container">
             <div className="category-tabs">
-              <button className={category === 'Broad-based Indices' ? 'active' : ''} onClick={() => setCategory('Broad-based Indices')}>Broad-based</button>
+              <button className={category === 'Broader Indices' ? 'active' : ''} onClick={() => setCategory('Broader Indices')}>Broader</button>
               <button className={category === 'Sectoral Indices' ? 'active' : ''} onClick={() => setCategory('Sectoral Indices')}>Sectoral</button>
               <button className={category === 'Thematic Indices' ? 'active' : ''} onClick={() => setCategory('Thematic Indices')}>Thematic</button>
               <button className={category === 'Strategic Indices' ? 'active' : ''} onClick={() => setCategory('Strategic Indices')}>Strategic</button>

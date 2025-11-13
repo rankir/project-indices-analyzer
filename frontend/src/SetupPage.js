@@ -1,37 +1,47 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom'; // For navigation
-import { useAlerts } from './AlertsContext'; // Import context
+import { useNavigate } from 'react-router-dom';
+import { useAlerts } from './AlertsContext';
 import './SetupPage.css';
 
 const API_URL = "http://127.0.0.1:8000";
-const CATEGORIES = ["Broad-based Indices", "Sectoral Indices", "Thematic Indices", "Strategic Indices"];
-const formatDate = (d) => new Date(d).toLocaleDateString();
+const CATEGORIES = ["Broader Indices", "Sectoral Indices", "Thematic Indices", "Strategic Indices"];
 
 function SetupPage() {
   const navigate = useNavigate();
-  const { alertData, setAlerts, clearAlerts } = useAlerts(); // Use Global State
+  const { alertData, setAlerts, clearAlerts } = useAlerts();
+  
+  // --- Tabs State ---
+  // Default to Master Config as it's the first logical step
+  const [activeTab, setActiveTab] = useState('master_config'); 
 
-  // Tabs State
-  const [activeTab, setActiveTab] = useState('data_upload');
-
-  // --- Existing State (Constituents) ---
-  const [constFiles, setConstFiles] = useState([]);
-  const [constMessage, setConstMessage] = useState('');
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState('');
+  // --- Common Data State ---
   const [indices, setIndices] = useState([]);
   
-  // --- TV Alerts State ---
+  // --- State: Master Config ---
+  const [masterFile, setMasterFile] = useState(null);
+  
+  // --- State: Data Filling (Constituents) ---
+  const [constMessage, setConstMessage] = useState('');
+  
+  // --- State: Manual Mapping Modal ---
+  // Used when a constituent file doesn't match the Master Config
+  const [isMappingModalOpen, setIsMappingModalOpen] = useState(false);
+  const [fileToMap, setFileToMap] = useState(null); 
+  const [selectedIndexId, setSelectedIndexId] = useState(''); 
+
+  // --- State: TV Alerts ---
   const [tvFile, setTvFile] = useState(null);
   const [tvLoading, setTvLoading] = useState(false);
   const [showDetails, setShowDetails] = useState(true);
 
-  // --- Delete State ---
+  // --- State: Delete ---
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [indexToDelete, setIndexToDelete] = useState(null);
 
-  // --- Fetch Indices ---
+  // ============================================================
+  // 1. DATA FETCHING
+  // ============================================================
   const fetchIndices = async () => {
     try {
       const response = await axios.get(`${API_URL}/api/indices`);
@@ -41,27 +51,98 @@ function SetupPage() {
   useEffect(() => { fetchIndices(); }, []);
 
 
-  // --- Handlers: Constituents (Existing) ---
-  const onConstFileChange = (e) => {
-    const files = Array.from(e.target.files);
-    if(files.length){ setConstFiles(files); setIsModalOpen(true); }
-    e.target.value = null;
-  };
-  const handleModalClose = () => { setIsModalOpen(false); setConstFiles([]); };
-  const onConstFileUpload = async () => {
+  // ============================================================
+  // 2. MASTER CONFIG HANDLERS
+  // ============================================================
+  const onMasterUpload = async () => {
+    if(!masterFile) return;
     const formData = new FormData();
-    for (const file of constFiles) formData.append("files", file, file.name);
-    formData.append("category", selectedCategory);
-    setConstMessage('Uploading...');
+    formData.append("file", masterFile);
+    
     try {
-      await axios.post(`${API_URL}/api/setup/upload-index`, formData);
-      setConstMessage(`Success!`);
+      const res = await axios.post(`${API_URL}/api/setup/master-config`, formData);
+      alert(`Success! Updated ${res.data.count} indices from Master.`);
       fetchIndices();
-      handleModalClose();
-    } catch (error) { setConstMessage('Error uploading.'); }
+      setMasterFile(null);
+    } catch (e) { 
+      alert("Error uploading master config"); 
+    }
   };
 
-  // --- Handlers: TV Alerts (NEW) ---
+
+  // ============================================================
+  // 3. DATA FILLING (CONSTITUENT) HANDLERS
+  // ============================================================
+  
+  // Triggered when user selects files
+  const onConstFileChange = (e) => {
+    const files = Array.from(e.target.files);
+    if(files.length) {
+      handleConstituentUploadFlow(files); // Start the upload flow
+    }
+    e.target.value = null;
+  };
+
+  // Core Upload Logic
+  // If indexIdOverride is provided, we are fixing a specific file map
+  const handleConstituentUploadFlow = async (files, indexIdOverride = null) => {
+    const formData = new FormData();
+    
+    if (indexIdOverride && fileToMap) {
+      // CASE A: Manual Mapping Fix
+      formData.append("files", fileToMap, fileToMap.name);
+      formData.append("index_id", indexIdOverride); // Send the ID user chose
+    } else {
+      // CASE B: Bulk Auto-Match
+      for (const file of files) formData.append("files", file, file.name);
+    }
+
+    setConstMessage('Uploading...');
+    
+    try {
+      const response = await axios.post(`${API_URL}/api/setup/upload-index`, formData);
+      const data = response.data;
+      
+      // CHECK FOR ERRORS
+      // The backend returns errors list. We check if any say "Unknown file"
+      const unknownError = data.errors.find(e => e.includes("Unknown file"));
+      
+      if (unknownError) {
+        // Parse the filename from the error string "Filename.csv: Unknown file..."
+        const badFileName = unknownError.split(':')[0];
+        const badFile = files.find(f => f.name === badFileName);
+        
+        if (badFile) {
+          setFileToMap(badFile);
+          setIsMappingModalOpen(true); // Open the mapping modal
+          setConstMessage(`Could not auto-match ${badFileName}. Please link it.`);
+          return; // Stop here, let user fix it
+        }
+      }
+
+      setConstMessage(data.detail);
+      fetchIndices();
+      
+      // Reset Mapping State
+      setIsMappingModalOpen(false);
+      setFileToMap(null);
+      setSelectedIndexId('');
+      
+    } catch (error) {
+      setConstMessage('Error uploading files.');
+    }
+  };
+
+  // Called from the Mapping Modal
+  const onManualLinkUpload = () => {
+     if (!selectedIndexId) return;
+     handleConstituentUploadFlow([fileToMap], selectedIndexId);
+  };
+
+
+  // ============================================================
+  // 4. TRADINGVIEW ALERTS HANDLERS (Existing)
+  // ============================================================
   const onTvFileChange = (e) => setTvFile(e.target.files[0]);
   
   const onTvUpload = async () => {
@@ -69,22 +150,20 @@ function SetupPage() {
     setTvLoading(true);
     const formData = new FormData();
     formData.append("file", tvFile);
-    
     try {
       const res = await axios.post(`${API_URL}/api/setup/process-tradingview-alerts`, formData);
-      setAlerts(res.data); // Save to Global Context
+      setAlerts(res.data); 
       setTvFile(null);
-    } catch (error) {
-      alert("Error processing alerts");
-    }
+    } catch (error) { alert("Error processing alerts"); }
     setTvLoading(false);
   };
 
-  const handleAutoSelectNav = () => {
-    navigate('/analyze');
-  };
+  const handleAutoSelectNav = () => navigate('/analyze');
 
-  // --- Delete Handlers (Existing) ---
+
+  // ============================================================
+  // 5. DELETE HANDLERS (Existing)
+  // ============================================================
   const handleDeleteIndex = async () => {
     if (!indexToDelete) return;
     await axios.delete(`${API_URL}/api/indices/${indexToDelete.id}`);
@@ -93,18 +172,26 @@ function SetupPage() {
   };
 
 
+  // ============================================================
+  // RENDER
+  // ============================================================
   return (
     <div className="page-content">
       <h2>Data Setup & Configuration</h2>
-      <p>Upload and configure your market data sources</p>
 
       {/* --- TABS --- */}
       <div className="setup-tabs">
         <button 
+          className={activeTab === 'master_config' ? 'active' : ''} 
+          onClick={() => setActiveTab('master_config')}
+        >
+          Master Config
+        </button>
+        <button 
           className={activeTab === 'data_upload' ? 'active' : ''} 
           onClick={() => setActiveTab('data_upload')}
         >
-          Data Upload
+          Data Filling
         </button>
         <button 
           className={activeTab === 'tv_alerts' ? 'active' : ''} 
@@ -112,30 +199,90 @@ function SetupPage() {
         >
           TradingView Alerts
         </button>
-        <button disabled>Field Mapping</button>
-        <button disabled>Settings</button>
       </div>
 
-      {/* ================= TAB 1: DATA UPLOAD (Existing) ================= */}
+      {/* ================= TAB 1: MASTER CONFIG ================= */}
+      {activeTab === 'master_config' && (
+        <div className="tab-content">
+          <div className="info-box">
+            <h4>👑 Phase 1: Master Configuration</h4>
+            <p>Upload the "Rosetta Stone" CSV to define your Index Skeleton.</p>
+            <p>Required Columns: <code>Name, DisplayName, Category, TVTicker, Filename</code></p>
+          </div>
+          
+          <div className="card dashed-uploader">
+             <h3>Upload Master CSV</h3>
+             <input type="file" accept=".csv" onChange={(e) => setMasterFile(e.target.files[0])} />
+             <button className="btn-primary" onClick={onMasterUpload} disabled={!masterFile}>
+               Update Master Schema
+             </button>
+          </div>
+
+          {/* Master Skeleton View */}
+          <div className="card">
+            <h3>Defined Indices (Skeleton)</h3>
+            <table className="alerts-table"> {/* Reusing table style */}
+              <thead>
+                <tr>
+                  <th>Display Name</th>
+                  <th>Category</th>
+                  <th>TV Ticker</th>
+                  <th>Expected File</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {indices.map(idx => (
+                  <tr key={idx.id}>
+                    <td>{idx.display_name}</td>
+                    <td><span className="category-pill">{idx.category}</span></td>
+                    <td>{idx.tv_ticker || '-'}</td>
+                    <td>{idx.expected_filename || '-'}</td>
+                    <td>
+                      {idx.record_count > 0 
+                        ? <span className="pill-52wh" style={{background:'#10b981'}}>Active ({idx.record_count})</span> 
+                        : <span className="pill-52wh" style={{background:'#ccc', color: '#666'}}>Empty</span>
+                      }
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* ================= TAB 2: DATA FILLING ================= */}
       {activeTab === 'data_upload' && (
         <div className="tab-content">
-           {/* ... Your existing upload boxes and list code goes here ... */}
-           {/* Keeping it brief for the answer, paste your previous 'Data Upload' code block here */}
+           <div className="info-box">
+            <h4>💪 Phase 2: Data Filling</h4>
+            <p>Upload Constituent CSVs. We will auto-match them to the Master Skeleton based on filename.</p>
+          </div>
+
+           {/* Upload Box */}
            <div className="card upload-box">
-              <h3>Index Constituents</h3>
-              <p>Upload .csv files (e.g., NIFTY_BANK.csv)</p>
+              <h3>Upload Constituent Files</h3>
+              <p>Select one or multiple .csv files</p>
               <label htmlFor="const-upload" className="btn-primary">Choose Files...</label>
               <input type="file" id="const-upload" multiple accept=".csv" onChange={onConstFileChange} style={{display:'none'}}/>
+              {constMessage && <p style={{marginTop:15, fontWeight:'bold'}}>{constMessage}</p>}
            </div>
            
            {/* Uploaded Files List */}
            <div className="card">
-             <h3>Uploaded Files ({indices.length})</h3>
+             <h3>Uploaded Files ({indices.filter(i=>i.record_count > 0).length})</h3>
              <div className="file-list">
-                {indices.map(idx => (
+                {indices.filter(i=>i.record_count > 0).map(idx => (
                     <div key={idx.id} className="file-list-item">
-                        <div className="file-name">{idx.original_filename} <span className="category-pill">{idx.category}</span></div>
-                        <button className="delete-btn" onClick={() => {setIndexToDelete(idx); setDeleteModalOpen(true)}}>🗑️</button>
+                        <div className="file-name">
+                          {idx.original_filename} 
+                          <span className="category-pill">{idx.category}</span>
+                        </div>
+                        <div style={{display:'flex', gap:10, alignItems:'center'}}>
+                           <span style={{fontSize:12, color:'#888'}}>{idx.record_count} records</span>
+                           <button className="delete-btn" onClick={() => {setIndexToDelete(idx); setDeleteModalOpen(true)}}>🗑️</button>
+                        </div>
                     </div>
                 ))}
              </div>
@@ -143,32 +290,26 @@ function SetupPage() {
         </div>
       )}
 
-      {/* ================= TAB 2: TRADINGVIEW ALERTS (NEW) ================= */}
+      {/* ================= TAB 3: TRADINGVIEW ALERTS ================= */}
       {activeTab === 'tv_alerts' && (
         <div className="tab-content">
-          
-          {/* 1. Info Box */}
           <div className="info-box">
             <h4>ⓘ TradingView Alerts Upload Guidelines</h4>
             <ul>
               <li>Upload CSV files exported from TradingView alerts</li>
-              <li>Required columns: Alert ID, Ticker, Name, Description, Time</li>
               <li>System will auto-detect 52-Week High/Low from Description</li>
             </ul>
           </div>
 
-          {/* 2. Uploader */}
           <div className="card dashed-uploader">
              <div className="upload-icon">📄</div>
              <h3>Upload TradingView Alerts</h3>
-             <p>Upload one or multiple CSV files</p>
              <input type="file" accept=".csv" onChange={onTvFileChange} />
              <button className="btn-primary" onClick={onTvUpload} disabled={!tvFile || tvLoading}>
                {tvLoading ? "Processing..." : "Upload Alerts"}
              </button>
           </div>
 
-          {/* 3. Dashboard (Only if data exists) */}
           {alertData && (
             <>
               <div className="stats-grid">
@@ -186,39 +327,29 @@ function SetupPage() {
                 </div>
               </div>
 
-              {/* Auto Mapped Indices */}
               <div className="card auto-map-card">
                 <h4>Auto-Mapped Indices</h4>
                 <div className="mapped-pills">
-                    {/* Unique mapped indices */}
                     {[...new Set(alertData.records.filter(r=>r.mapped_index_name !== "Not mapped").map(r=>r.mapped_index_name))]
                      .map(name => <span key={name} className="pill purple">{name}</span>)
                     }
                 </div>
-                <p>These indices have been automatically detected from your alerts.</p>
                 <button className="btn-full-width" onClick={handleAutoSelectNav}>
                     Auto-Select in Analyze Page
                 </button>
               </div>
 
-              {/* Details Table */}
               <div className="card">
                 <div className="card-header-row">
                     <h3>Uploaded Alert File</h3>
                     <button className="btn-text" onClick={clearAlerts} style={{color:'red'}}>Clear All</button>
                 </div>
-                
                 <div className="file-details-header">
                     <span>{alertData.filename}</span>
-                    <div className="badges">
-                        <span className="badge-black">~ {alertData.summary.highs} Highs</span>
-                        <span className="badge-black">~ {alertData.summary.lows} Lows</span>
-                    </div>
                     <button onClick={() => setShowDetails(!showDetails)}>
                         {showDetails ? "Hide Details" : "Show Details"}
                     </button>
                 </div>
-
                 {showDetails && (
                     <table className="alerts-table">
                         <thead>
@@ -233,11 +364,7 @@ function SetupPage() {
                             {alertData.records.map((row, i) => (
                                 <tr key={i}>
                                     <td>{row.ticker}</td>
-                                    <td>
-                                        <span className={`flag-badge ${row.flag_type.toLowerCase()}`}>
-                                            {row.flag_type}
-                                        </span>
-                                    </td>
+                                    <td><span className={`flag-badge ${row.flag_type.toLowerCase()}`}>{row.flag_type}</span></td>
                                     <td className={row.mapped_index_id ? "mapped" : "unmapped"}>
                                         {row.mapped_index_name || "Not mapped"}
                                     </td>
@@ -253,18 +380,30 @@ function SetupPage() {
         </div>
       )}
 
-      {/* Modal Config (Existing) */}
-      {isModalOpen && (
+      {/* ================= MODALS ================= */}
+      
+      {/* Manual Mapping Modal (NEW) */}
+      {isMappingModalOpen && (
          <div className="modal-backdrop">
             <div className="modal-content card">
-               <h4>Select Category</h4>
-               <select onChange={(e) => setSelectedCategory(e.target.value)}>
-                  <option>Select...</option>
-                  {CATEGORIES.map(c=><option key={c} value={c}>{c}</option>)}
+               <h4 style={{color:'#f59e0b'}}>⚠️ Unknown File Detected</h4>
+               <p>We don't recognize the file <strong>{fileToMap?.name}</strong>.</p>
+               <p style={{fontSize:14, color:'#666'}}>Please link it to one of your Master Indices:</p>
+               
+               <select 
+                 value={selectedIndexId} 
+                 onChange={(e) => setSelectedIndexId(e.target.value)}
+                 style={{width:'100%', padding:8, marginTop:10, marginBottom:20}}
+               >
+                  <option value="">Select Index...</option>
+                  {indices.map(idx => (
+                     <option key={idx.id} value={idx.id}>{idx.display_name}</option>
+                  ))}
                </select>
+               
                <div className="modal-actions">
-                 <button className="btn-secondary" onClick={handleModalClose}>Cancel</button>
-                 <button className="btn-primary" onClick={onConstFileUpload}>Upload</button>
+                 <button className="btn-secondary" onClick={() => {setIsMappingModalOpen(false); setFileToMap(null);}}>Cancel</button>
+                 <button className="btn-primary" onClick={onManualLinkUpload} disabled={!selectedIndexId}>Link & Upload</button>
                </div>
             </div>
          </div>
@@ -275,8 +414,11 @@ function SetupPage() {
         <div className="modal-backdrop">
           <div className="modal-content card">
             <h4>Delete?</h4>
-            <button className="btn-danger" onClick={handleDeleteIndex}>Confirm</button>
-            <button className="btn-secondary" onClick={() => setDeleteModalOpen(false)}>Cancel</button>
+            <p>This will clear the data for <strong>{indexToDelete?.display_name}</strong>.</p>
+            <div className="modal-actions">
+                <button className="btn-secondary" onClick={() => setDeleteModalOpen(false)}>Cancel</button>
+                <button className="btn-danger" onClick={handleDeleteIndex}>Confirm</button>
+            </div>
           </div>
         </div>
       )}
