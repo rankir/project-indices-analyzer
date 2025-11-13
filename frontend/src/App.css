@@ -1,5 +1,5 @@
 .App {
-  text-align: left; /* Change this from 'center' */
+  text-align: left;
 }
 
 .App-logo {
@@ -14,13 +14,13 @@
 }
 
 .App-header {
-  background-color: #1a1a2e; /* Dark main background */
+  background-color: #f8f9fa; /* Light main background */
   min-height: calc(100vh - 60px); /* Full height minus navbar */
   display: flex;
   flex-direction: column;
   align-items: center;
   font-size: calc(10px + 2vmin);
-  color: white;
+  color: #333;
   padding: 20px;
   box-sizing: border-box;
 }
@@ -39,7 +39,8 @@
 }
 
 .card {
-  background: #282c34;
+  background: #fff;
+  border: 1px solid #e5e7eb;
   border-radius: 8px;
   padding: 20px;
   margin-top: 20px;
@@ -55,11 +56,12 @@
 }
 
 .index-list th, .index-list td {
-  border: 1px solid #444;
+  border: 1px solid #e5e7eb;
   padding: 8px;
   text-align: left;
+  color: #333;
 }
 
 .index-list th {
-  background: #3a3f4a;
+  background: #f3f4f6;
 }
