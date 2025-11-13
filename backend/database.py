@@ -1,21 +1,17 @@
 import os
+import datetime
 from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, Boolean, DateTime, Float
 from sqlalchemy.orm import sessionmaker, declarative_base, relationship, Session
 from sqlalchemy.engine.url import URL
-import datetime # <-- ADD THIS IMPORT
 
 # --- Database Configuration ---
-# We'll use a simple SQLite file
 DATABASE_URL = "sqlite:///./app_data.db"
-# This is the 'engine' that connects SQLAlchemy to the database file
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 
 # --- Session Setup ---
-# A 'Session' is how you talk to the database (add data, query data, etc.)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 # --- Base Model Class ---
-# This is the base class all our database tables will inherit from
 Base = declarative_base()
 
 # --- Helper Function to Get a DB Session ---
@@ -37,35 +33,42 @@ class Index(Base):
     category = Column(String, nullable=True)
     is_at_52wh = Column(Boolean, default=False)
     
-    # --- NEW FIELDS ---
+    # Metadata fields
     original_filename = Column(String, nullable=True)
     upload_date = Column(DateTime, default=datetime.datetime.utcnow)
     file_size_kb = Column(Float, nullable=True)
     record_count = Column(Integer, default=0)
-    # --- END NEW FIELDS ---
     
-    # This creates the 'reverse' relationship
-    # --- ADD cascade="all, delete-orphan" ---
+    # Relationships
     stocks = relationship("IndexConstituent", back_populates="index", cascade="all, delete-orphan")
+
 
 class Stock(Base):
     __tablename__ = "stocks"
     id = Column(Integer, primary_key=True, index=True)
     ticker = Column(String, unique=True, index=True) # e.g., "HDFCBANK"
     
-    # A stock can be in many indices
     indices = relationship("IndexConstituent", back_populates="stock")
+
 
 class IndexConstituent(Base):
     __tablename__ = "index_constituents"
     index_id = Column(Integer, ForeignKey("indices.id"), primary_key=True)
     stock_id = Column(Integer, ForeignKey("stocks.id"), primary_key=True)
     
-    # This creates the 'forward' relationship
     index = relationship("Index", back_populates="stocks")
     stock = relationship("Stock", back_populates="indices")
 
-# We'll skip the TradingViewMap for now to keep it simple
+
+# --- THIS WAS MISSING ---
+class TradingViewMap(Base):
+    __tablename__ = "tv_map"
+    tv_alert_name = Column(String, primary_key=True, index=True) # e.g., "TVC:US10Y, 1D"
+    index_id = Column(Integer, ForeignKey("indices.id"))
+
+    index = relationship("Index")
+# ------------------------
+
 
 # --- Function to Create Tables ---
 def create_tables():

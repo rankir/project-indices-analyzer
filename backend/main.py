@@ -1,12 +1,15 @@
 # Import the new middleware
+import csv
+import io
 from pydantic import BaseModel, Field
 from typing import List, Optional
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, Depends, UploadFile, File, HTTPException, Form
 from sqlalchemy.orm import Session
 import datetime
-from database import Index, create_tables, get_db
+from database import create_tables, get_db, TradingViewMap, Index
 from services import process_index_csv, analyze_common_stocks
+
 
 # --- App Initialization ---
 app = FastAPI()
@@ -63,6 +66,19 @@ class AnalysisResultSchema(BaseModel):
     analysis_of: List[str]
     commonality: List[StockCommonalitySchema]
     summary: AnalysisSummarySchema # <-- ADD THIS
+
+    # --- New Schema for Alert Data ---
+class AlertRecord(BaseModel):
+    ticker: str
+    flag_type: str # "High", "Low", "Unknown"
+    mapped_index_id: Optional[int]
+    mapped_index_name: Optional[str]
+    date: str
+
+class AlertResponse(BaseModel):
+    filename: str
+    records: List[AlertRecord]
+    summary: dict
 
 # --- Event Handler ---
 @app.on_event("startup")
@@ -155,3 +171,89 @@ def delete_index(index_id: int, db: Session = Depends(get_db)):
     db.commit()
     
     return {"status": "success", "detail": "Index and constituents deleted"}
+
+
+# --- Helper to parse TradingView CSV ---
+def parse_tradingview_csv(content: bytes, db: Session):
+    text = content.decode('utf-8-sig') # Use 'utf-8-sig' to handle potential BOM
+    reader = csv.DictReader(io.StringIO(text))
+    
+    records = []
+    highs = 0
+    lows = 0
+    
+    for row in reader:
+        # TradingView CSVs usually have 'Ticker', 'Description', 'Time'
+        ticker = row.get('Ticker') or row.get('Symbol')
+        description = row.get('Description', '').lower()
+        time_str = row.get('Time', '')
+        
+        if not ticker: continue
+        
+        # 1. Determine Flag Type
+        flag = "Unknown"
+        if "New 52-Week High!" in description:
+            flag = "High"
+            highs += 1
+        elif "New 52-Week Low!" in description:
+            flag = "Low"
+            lows += 1
+            
+        # 2. Map to Index
+        mapped_id = None
+        mapped_name = "Not mapped"
+        
+        # First check the Mapping table (Exact match)
+        tv_map = db.query(TradingViewMap).filter(TradingViewMap.tv_alert_name == ticker).first()
+        if tv_map:
+            mapped_id = tv_map.index_id
+            index = db.query(Index).filter(Index.id == mapped_id).first()
+            if index:
+                mapped_name = index.display_name
+        else:
+            # Fallback: Clean the ticker and try exact match on Index Name
+            # Logic: "TVC:US10Y, 1D" -> "TVC:US10Y" -> "US10Y"
+            base_ticker = ticker.split(',')[0] # Remove timeframe like ", 1D"
+            clean_ticker = base_ticker.split(':')[-1] # Remove prefix like "TVC:"
+            
+            index = db.query(Index).filter(Index.name == clean_ticker).first()
+            if index:
+                mapped_id = index.id
+                mapped_name = index.display_name
+
+        # 3. Format Date (Simple ISO format)
+        try:
+            date_display = time_str.split('T')[0] if 'T' in time_str else time_str
+        except:
+            date_display = "Invalid Date"
+
+        records.append({
+            "ticker": ticker,
+            "flag_type": flag,
+            "mapped_index_id": mapped_id,
+            "mapped_index_name": mapped_name,
+            "date": date_display
+        })
+
+    return {
+        "records": records,
+        "summary": {
+            "total_alerts": len(records),
+            "highs": highs,
+            "lows": lows
+        }
+    }
+
+# --- NEW API ENDPOINT ---
+@app.post("/api/setup/process-tradingview-alerts", response_model=AlertResponse)
+async def process_tv_alerts(file: UploadFile = File(...), db: Session = Depends(get_db)):
+    contents = await file.read()
+    try:
+        result = parse_tradingview_csv(contents, db)
+        return {
+            "filename": file.filename,
+            "records": result['records'],
+            "summary": result['summary']
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

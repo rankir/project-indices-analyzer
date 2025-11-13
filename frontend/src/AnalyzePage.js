@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useAlerts } from './AlertsContext';
 import './AnalyzePage.css';
 import './AnalyzeResults.css'; // Make sure this CSS file is imported
 
@@ -63,6 +64,8 @@ function AnalysisResultRow({ row, totalIndices }) {
 
 // --- Main AnalyzePage Component ---
 function AnalyzePage() {
+  const { alertData, getAlertIndexIds } = useAlerts();
+  
   const [indices, setIndices] = useState([]);
   const [selectedIndices, setSelectedIndices] = useState([]);
   
@@ -162,10 +165,46 @@ function AnalyzePage() {
   // Get total count for the table header
   const totalIndicesSelected = analysisResult ? analysisResult.analysis_of.length : 0;
 
+  // --- NEW: Auto Select Handlers ---
+  const handleSelectFromAlerts = (type) => {
+    const targetIds = getAlertIndexIds(type); // Get IDs from context
+    const targetIndices = indices.filter(idx => targetIds.includes(idx.id));
+    
+    // Merge with existing selection, avoiding duplicates
+    const combined = [...selectedIndices];
+    targetIndices.forEach(idx => {
+        if(!combined.find(existing => existing.id === idx.id)) {
+            combined.push(idx);
+        }
+    });
+    setSelectedIndices(combined);
+  };
+
   // --- RENDER FUNCTION ---
   return (
     <div className="page-content">
-      
+
+      {/* --- NEW: QUICK ACTIONS BANNER --- */}
+      {alertData && !analysisResult && (
+        <div className="quick-actions-banner">
+           <div className="banner-content">
+             <span className="lightning-icon">⚡</span>
+             <div>
+                <strong>Quick Actions from TradingView Alerts</strong>
+                <div className="banner-sub">{alertData.records.filter(r=>r.mapped_index_id).length} indices detected from your uploaded alerts</div>
+             </div>
+           </div>
+           <div className="banner-actions">
+             <button className="btn-white" onClick={() => handleSelectFromAlerts('ALL')}>
+                Select All from Alerts
+             </button>
+             <button className="btn-white" onClick={() => handleSelectFromAlerts('HIGH')}>
+                ↗ 52W Highs Only
+             </button>
+           </div>
+        </div>
+      )}
+
       {/* --- Titles --- */}
       {/* Show "Index Selector" title *before* analysis */}
       {!analysisResult && (
@@ -238,29 +277,29 @@ function AnalyzePage() {
 
           {/* --- Index List --- */}
           <div className="index-selector-list">
-            {visibleIndices.length === 0 ? (
-              <p style={{marginTop: '20px', textAlign: 'center'}}>No indices found for this category.</p>
-            ) : (
-              visibleIndices.map(index => { 
+            {indices.filter(i => (i.category || 'N/A') === category).map(index => {
                 const isSelected = selectedIndices.find(item => item.id === index.id);
+                
+                // --- NEW: Check if this index is in the alerts ---
+                const isFromAlert = alertData?.records.some(r => r.mapped_index_id === index.id);
+                
                 return (
-                  <div key={index.id} className="index-item card">
-                    <input
-                      type="checkbox"
-                      checked={!!isSelected}
-                      onChange={() => handleSelect(index)}
-                      id={`index-${index.id}`}
-                    />
+                  <div 
+                    key={index.id} 
+                    className={`index-item card ${isFromAlert ? 'alert-highlight' : ''}`} // Add CSS class
+                  >
+                    <input type="checkbox" checked={!!isSelected} onChange={() => handleSelect(index)} id={`index-${index.id}`} />
                     <label htmlFor={`index-${index.id}`} className="index-info">
                       <span className="index-name">
                         {index.display_name}
+                        {/* Add 'From Alerts' Badge */}
+                        {isFromAlert && <span className="pill-alert">⚡ From Alerts</span>}
                         {index.is_at_52wh && <span className="pill-52wh">52W High</span>}
                       </span>
                     </label>
                   </div>
                 );
-              })
-            )}
+            })}
           </div>
         </>
       )}

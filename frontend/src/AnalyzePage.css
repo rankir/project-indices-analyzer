@@ -254,3 +254,24 @@
   display: flex;
   flex-direction: column;
 }
+
+.quick-actions-banner {
+  background: #f3e8ff; /* Light purple */
+  border: 1px solid #d8b4fe;
+  padding: 15px;
+  border-radius: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  color: #581c87;
+}
+.banner-content { display: flex; gap: 10px; align-items: center; }
+.lightning-icon { font-size: 20px; }
+.banner-sub { font-size: 12px; color: #6b21a8; }
+
+.btn-white { background: white; border: 1px solid #d8b4fe; color: #6b21a8; padding: 6px 12px; border-radius: 4px; cursor: pointer; margin-left: 10px; font-weight: 500; }
+.btn-white:hover { background: #faf5ff; }
+
+.alert-highlight { border-left: 4px solid #a855f7 !important; background: #2e2e3a; }
+.pill-alert { background: #f3e8ff; color: #6b21a8; font-size: 10px; padding: 2px 6px; border-radius: 10px; margin-left: 8px; font-weight: bold; border: 1px solid #d8b4fe; }

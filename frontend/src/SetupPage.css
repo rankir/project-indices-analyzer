@@ -227,3 +227,31 @@
   padding: 4px 0;
   color: #e0e0e0;
 }
+
+.setup-tabs { display: flex; gap: 20px; border-bottom: 1px solid #444; margin-bottom: 20px; }
+.setup-tabs button { background: none; border: none; color: #888; padding: 10px 0; cursor: pointer; font-size: 16px; }
+.setup-tabs button.active { color: white; border-bottom: 2px solid #3b82f6; }
+
+.info-box { background: #23272f; border: 1px solid #3b82f6; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
+.dashed-uploader { border: 2px dashed #444; text-align: center; padding: 30px; }
+
+.stats-grid { display: flex; gap: 15px; margin-bottom: 20px; }
+.stat-card { flex: 1; background: #282c34; padding: 15px; border-radius: 8px; }
+.stat-card .value { font-size: 24px; font-weight: bold; }
+.stat-card .value.green { color: #10b981; }
+.stat-card .value.red { color: #ef4444; }
+
+.auto-map-card { background: #fdf4ff; color: #333; border: 1px solid #d8b4fe; } /* Purple tint */
+.auto-map-card h4 { margin: 0 0 10px 0; color: #6b21a8; }
+.pill.purple { background: #a855f7; color: white; }
+.btn-full-width { width: 100%; background: white; border: 1px solid #ccc; padding: 10px; margin-top: 15px; cursor: pointer; font-weight: bold; }
+
+.alerts-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+.alerts-table th { text-align: left; color: #888; font-size: 12px; }
+.alerts-table td { padding: 8px 0; border-bottom: 1px solid #333; font-size: 14px; }
+.flag-badge { padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; }
+.flag-badge.high { background: #10b981; color: black; }
+.flag-badge.low { background: #ef4444; color: white; }
+.flag-badge.unknown { background: #555; color: white; }
+.mapped { color: #10b981; }
+.unmapped { color: #666; font-style: italic; }
