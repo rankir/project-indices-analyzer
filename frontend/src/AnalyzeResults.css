@@ -100,6 +100,17 @@
   background: #f9fafb;
 }
 
+/* Selected indices pills (compact dark style) */
+.selected-pills .pill, .selected-indices .pill {
+  background: #0f172a;
+  color: #fff;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-right: 6px;
+}
+
 .results-table-row {
   background: #fff;
   border-radius: 5px;

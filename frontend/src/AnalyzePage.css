@@ -43,13 +43,32 @@
 .pill {
   background-color: #a855f7;
   color: white;
-  padding: 5px 10px;
+  padding: 6px 10px;
   border-radius: 15px;
-  font-size: 14px;
+  font-size: 13px;
   display: flex;
   align-items: center;
   gap: 6px;
 }
+
+/* When pills appear in the 'selected' area use compact dark style */
+.selected-pills .pill {
+  background: #0f172a;
+  color: #fff;
+  padding: 4px 8px;
+  font-size: 12px;
+  border-radius: 12px;
+}
+
+/* Style the checkbox area on index items to align and appear as a square chip */
+.index-item input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  accent-color: #3b82f6;
+  flex-shrink: 0;
+}
+
+.index-item .checkbox-wrapper { display:flex; align-items:center; margin-right:8px; }
 
 .pill-remove {
   background: none;
@@ -119,11 +138,12 @@
   display: flex;
   align-items: center;
   gap: 15px;
-  padding: 15px;
-  margin-bottom: 10px;
-  background-color: #f9fafb;
-  border: 1px solid #e5e7eb;
-  border-radius: 6px;
+  padding: 16px 18px;
+  margin-bottom: 12px;
+  background-color: #fff;
+  border: 2px solid rgba(59,130,246,0.18); /* soft blue outline */
+  border-radius: 12px;
+  box-shadow: 0 1px 0 rgba(59,130,246,0.06) inset;
 }
 
 .index-item input[type="checkbox"] {
@@ -148,6 +168,22 @@
   color: #333;
 }
 
+/* Right-side price container - keep price aligned right */
+.index-value {
+  text-align: right;
+  min-width: 140px;
+}
+.index-value .price {
+  display: block;
+  font-weight: 700;
+  color: #0f172a;
+}
+.index-value .change {
+  display: block;
+  font-weight: 600;
+  color: #10b981;
+}
+
 .pill-52wh {
   background-color: #10b981;
   color: white;
@@ -167,24 +203,25 @@
   bottom: 0;
   left: 0;
   width: 100%;
-  background-color: #fff;
-  padding: 20px;
-  border-top: 1px solid #e5e7eb;
+  background-color: transparent;
+  padding: 18px 20px;
+  border-top: none;
   display: flex;
   justify-content: center;
-  z-index: 100;
-  box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.05);
+  z-index: 1000;
 }
 
 .analyze-button {
-  background-color: #3b82f6;
+  background-color: #0f172a; /* dark full-width button */
   color: white;
   border: none;
-  padding: 15px 30px;
-  font-size: 18px;
-  font-weight: bold;
-  border-radius: 8px;
+  padding: 14px 24px;
+  font-size: 16px;
+  font-weight: 700;
+  border-radius: 999px;
   cursor: pointer;
+  width: calc(100% - 40px);
+  max-width: 1150px;
 }
 
 .analyze-button:hover {
