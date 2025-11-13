@@ -8,27 +8,28 @@
 
 .summary-card {
   flex: 1;
-  background: #282c34;
+  background: #fff;
   border-radius: 8px;
   padding: 20px;
-  border: 1px solid #444;
+  border: 1px solid #e5e7eb;
 }
 
 .summary-card-title {
   font-size: 14px;
-  color: #a0a0a0;
+  color: #6b7280;
   margin-bottom: 10px;
+  font-weight: 500;
 }
 
 .summary-card-value {
   font-size: 28px;
   font-weight: bold;
-  color: #ffffff;
+  color: #333;
 }
 
 .summary-card-footer {
   font-size: 12px;
-  color: #a0a0a0;
+  color: #9ca3af;
   margin-top: 5px;
 }
 
@@ -39,7 +40,8 @@
   align-items: center;
   margin-top: 20px;
   padding: 10px;
-  background: #282c34;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
   border-radius: 8px;
 }
 
@@ -52,19 +54,28 @@
   width: 100%;
   padding: 8px 12px;
   border-radius: 5px;
-  border: 1px solid #444;
-  background-color: #1e1e2d;
-  color: white;
+  border: 1px solid #d1d5db;
+  background-color: #fff;
+  color: #333;
   font-size: 14px;
 }
 
+.search-bar input::placeholder {
+  color: #9ca3af;
+}
+
 .export-button {
-  background: none;
-  border: 1px solid #444;
-  color: #e0e0e0;
+  background: #fff;
+  border: 1px solid #d1d5db;
+  color: #333;
   padding: 8px 12px;
   border-radius: 5px;
   cursor: pointer;
+  font-weight: 500;
+}
+
+.export-button:hover {
+  background: #f3f4f6;
 }
 
 /* --- Results Table --- */
@@ -78,34 +89,37 @@
   gap: 10px;
   align-items: center;
   padding: 15px;
-  border-bottom: 1px solid #3a3f4a;
+  border-bottom: 1px solid #e5e7eb;
 }
 
 .results-table-header {
   font-size: 12px;
-  color: #a0a0a0;
+  color: #6b7280;
   font-weight: bold;
   text-transform: uppercase;
+  background: #f9fafb;
 }
 
 .results-table-row {
-  background: #282c34;
+  background: #fff;
   border-radius: 5px;
   margin-bottom: 5px;
+  border: 1px solid #e5e7eb;
 }
 
 .stock-info .stock-ticker {
   font-size: 16px;
-  font-weight: 500;
-  color: #ffffff;
+  font-weight: 600;
+  color: #333;
 }
 .stock-info .stock-name {
   font-size: 12px;
-  color: #a0a0a0;
+  color: #6b7280;
 }
 
 .stock-price {
   font-weight: 500;
+  color: #333;
 }
 .stock-change-pos {
   color: #10b981;
@@ -117,46 +131,58 @@
 }
 
 .overlap-pill {
-  background: #1e1e2d;
-  border: 1px solid #444;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
   padding: 4px 8px;
   border-radius: 5px;
   font-weight: bold;
   font-size: 14px;
+  color: #1e40af;
+}
+
+.indices-pills {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
 }
 
 .indices-pills span {
-  background: #3a3f4a;
-  color: #e0e0e0;
+  background: #f3f4f6;
+  color: #333;
   padding: 3px 8px;
   border-radius: 5px;
   font-size: 12px;
-  margin-right: 5px;
+  font-weight: 500;
 }
 
 .expand-button {
   background: none;
   border: none;
-  color: #a0a0a0;
+  color: #9ca3af;
   font-size: 20px;
   cursor: pointer;
   transform: rotate(0deg);
   transition: transform 0.2s ease;
+}
+.expand-button:hover {
+  color: #333;
 }
 .expand-button.expanded {
   transform: rotate(180deg);
 }
 
 .row-expansion {
-  background: #23272f;
+  background: #f9fafb;
   padding: 15px;
   border-radius: 0 0 5px 5px;
   margin: -5px 0 5px 0;
+  border: 1px solid #e5e7eb;
+  border-top: none;
 }
 .row-expansion-title {
   font-size: 12px;
   font-weight: bold;
-  color: #a0a0a0;
+  color: #6b7280;
   margin-bottom: 10px;
 }
 .row-expansion-list {
@@ -165,14 +191,28 @@
   gap: 8px;
 }
 
+.row-expansion-list .pill {
+  background: #f3f4f6;
+  color: #333;
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 13px;
+}
+
 /* --- Insights Box --- */
 .insights-box {
-  background: #282c34;
-  border: 1px solid #3b82f6;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
   border-radius: 8px;
   padding: 20px;
   margin-top: 20px;
   font-size: 14px;
+  color: #1e40af;
+}
+
+.insights-box h4 {
+  color: #1e40af;
+  margin-top: 0;
 }
 
 .insights-box ul {
@@ -181,5 +221,5 @@
 }
 .insights-box li {
   margin-bottom: 5px;
-  color: #a0a0a0;
+  color: #1e40af;
 }

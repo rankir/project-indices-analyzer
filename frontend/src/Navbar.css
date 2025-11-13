@@ -1,14 +1,15 @@
 .navbar {
   width: 100%;
-  background-color: #1e1e2d; /* Dark background */
+  background-color: #fff; /* Light background */
   padding: 0 20px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   height: 60px;
-  border-bottom: 1px solid #333;
-  color: #e0e0e0;
+  border-bottom: 1px solid #e5e7eb;
+  color: #333;
   box-sizing: border-box;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .navbar-left {
@@ -30,6 +31,7 @@
 .nav-title {
   font-size: 18px;
   font-weight: 500;
+  color: #333;
 }
 
 .navbar-center {
@@ -38,7 +40,7 @@
 }
 
 .nav-item {
-  color: #a0a0a0;
+  color: #6b7280;
   text-decoration: none;
   padding: 10px 15px;
   border-radius: 6px;
@@ -46,17 +48,17 @@
 }
 
 .nav-item:hover {
-  background-color: #2a2a3a;
-  color: #ffffff;
+  background-color: #f3f4f6;
+  color: #333;
 }
 
 /* This style is applied by NavLink for the active page */
 .nav-item.active {
-  background-color: #282c34;
-  color: #ffffff;
+  background-color: #eff6ff;
+  color: #3b82f6;
 }
 
 .navbar-right {
   font-size: 14px;
-  color: #a0a0a0;
+  color: #6b7280;
 }

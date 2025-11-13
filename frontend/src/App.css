@@ -21,8 +21,27 @@
   align-items: center;
   font-size: calc(10px + 2vmin);
   color: #333;
-  padding: 20px;
+  padding: 30px 20px;
   box-sizing: border-box;
+}
+
+.page-content {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.page-content h2 {
+  margin-top: 0;
+  margin-bottom: 5px;
+  color: #333;
+  font-size: 28px;
+}
+
+.page-content > p {
+  color: #6b7280;
+  margin-top: 0;
+  margin-bottom: 30px;
 }
 
 .App-link {
@@ -45,7 +64,6 @@
   padding: 20px;
   margin-top: 20px;
   width: 100%;
-  max-width: 800px;
   box-sizing: border-box;
 }
 
